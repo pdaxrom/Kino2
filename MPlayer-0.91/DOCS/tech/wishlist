@@ -1,0 +1,133 @@
+
+If wishes were fishes, we'd all cast nets ...
+
+
+Documentation:
+
+ * a nice and complete MEncoder tutorial
+
+ * continue docs review
+
+ * check docs for completeness
+
+ * write documentation HOWTO/rules document
+
+
+
+Small improvements:
+
+ * vo mga should completely blank the screen like fbdev and tdfxfb
+   (maybe there should be an option - some people seem to like it the
+   way it is, but then fbdev should also behave like this..)
+
+ * Debian package creates mplayer.conf.1 .2 ...
+
+ * -vo fbdev -fb device ---> -fbdev:device
+
+ * accept dvd://9-12 command line
+
+ * make -geometry work with all vo drivers
+
+ * Make the output windows remember their positions when resizing to
+   double size.
+
+ * Ability to completely disable those popups ('cannot access cdrom',
+   'your system is too slow...').
+
+ * Ability to resize to full size/double size/triple (or half) size
+   upon key presses.
+
+
+
+Cleanup:
+
+ * integrate dvdnav into mplayer structure
+
+ * integrate libmpdvdkit2 into mplayer structure (message system and
+   command line options)
+
+ * remove all obsolete code, options, files etc
+
+ * move zoran jpeg encoder to video filters
+
+ * convert -zr options to -zr suboption:suboption format
+
+ * Restructure configure and fix CPU flags supported but not shown.
+
+
+
+Filters:
+
+ * eq filter should support RGB in addition to YUV
+
+
+
+Enhancements:
+
+ * adapt colored output from MPlayerXP
+
+ * merge VIDIX from MPlayerXP/sourceforge
+
+ * port asf muxing from MPlayerXP
+
+ * write nut muxer/demuxer
+
+ * SSA style & colors handling
+
+ * plugin structure for vf/af
+
+ * support for VirtualDub and Winamp plugins
+
+ * implement xawtv config file parser (for channels, etc)
+
+ * finish icc support
+
+ * G400 2nd head through mga_vid ;)
+
+ * dts support
+
+ * do more things automagically
+
+ * guess correct DVD title
+
+ * syuv and paletted rgb support in swscaler
+
+ * implement Plextor compatible SCSI VCD reading
+
+ * udp:// support (like xine and vlc)
+
+ * write native MacOS X video driver
+
+
+
+Difficult stuff:
+
+ * reverse engineer all closed source codecs (QDM2, WMV9, Real, ...)
+
+ * support for Bink/Smacker codecs
+
+ * frame stepping
+
+ * allow frame insertion & removal in video filters (with timestamps)
+
+ * mixing of multiple videos (picture in picture, ...)
+
+ * stay in pause after seek, fullscreen etc
+
+ * write something like mptv to replace xawtv
+
+ * write/adapt a C implementation of rtsp
+
+ * real mmsu:// support
+
+ * encode to ogm, mp4, asf, nut
+
+ * xinerama video filter that splits movie to 2 screens (like zr)
+
+ * top notch DVD navigation like a hardware player
+
+ * FLAC and JACK support
+
+ * write mpdump application to handle all -dump* options
+
+ * modular MEncoder with audio encoding API

@@ -1,0 +1,9 @@
+libdha.o: libdha.c config.h ../config.h libdha.h AsmMacros.h \
+ sysdep/AsmMacros_x86.h sysdep/../kernelhelper/dhahelper.h \
+ kernelhelper/dhahelper.h
+mtrr.o: mtrr.c config.h ../config.h libdha.h AsmMacros.h \
+ sysdep/AsmMacros_x86.h sysdep/../kernelhelper/dhahelper.h
+pci.o: pci.c libdha.h AsmMacros.h sysdep/AsmMacros_x86.h config.h \
+ ../config.h sysdep/../kernelhelper/dhahelper.h sysdep/pci_linux.c \
+ sysdep/pci_x86.c
+pci_names.o: pci_names.c pci_names.h pci_dev_ids.c

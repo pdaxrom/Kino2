@@ -1,0 +1,8 @@
+Package: kino2
+Section: qpe/system
+Priority: optional
+Version: 0.21
+Architecture: arm
+Maintainer: Alexander Chukov <sash@cacko.biz>
+Depends: 
+Description: Qtopia GUI for mplayer, optimized for SL-C7x0

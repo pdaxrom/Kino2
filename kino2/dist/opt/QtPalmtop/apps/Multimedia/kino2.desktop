@@ -1,0 +1,11 @@
+[Desktop Entry]
+Comment=Kino2 mplayer GUI and ATI Imageon 100 drivers
+Exec=kino2
+Icon=kino2/tv.png
+Type=Application
+MimeType=audio/*;video/*;audio/x-wav;application/x-shockwave-flash
+MimeTypeIcons=SoundPlayer;MPEGPlayer;Sound;Sound
+Name=Kino2
+Name[mk]=Кино2
+Name[ru]=Кино2
+Display=640x480/144dpi,480x640/144dpi

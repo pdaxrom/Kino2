@@ -1,0 +1,838 @@
+diff -Nur MPlayer-0.91/libavcodec/Makefile MPlayer-0.91-slc7x0/libavcodec/Makefile
+--- MPlayer-0.91/libavcodec/Makefile	2003-02-01 20:57:37.000000000 +0000
++++ MPlayer-0.91-slc7x0/libavcodec/Makefile	2003-08-22 23:19:03.000000000 +0000
+@@ -7,8 +7,8 @@
+ VPATH=$(SRC_PATH)/libavcodec
+ 
+ # NOTE: -I.. is needed to include config.h
+-CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
+-LDFLAGS= -g
++CFLAGS= $(OPTFLAGS) -Wall -DHAVE_AV_CONFIG_H -I.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
++LDFLAGS=
+ 
+ OBJS= common.o utils.o mem.o allcodecs.o \
+       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
+@@ -62,9 +62,10 @@
+ endif
+ 
+ # armv4l specific stuff
+-ifeq ($(TARGET_ARCH_ARMV4L),yes)
++ifeq ($(TARGET_ARCH_ARM),yes)
+ ASM_OBJS += armv4l/jrevdct_arm.o
+ OBJS += armv4l/dsputil_arm.o armv4l/mpegvideo_arm.o
++CFLAGS += -DARCH_ARMV4L
+ endif
+ 
+ # sun mediaLib specific stuff
+diff -Nur MPlayer-0.91/Makefile MPlayer-0.91-slc7x0/Makefile
+--- MPlayer-0.91/Makefile	2003-08-09 14:12:30.000000000 +0000
++++ MPlayer-0.91-slc7x0/Makefile	2003-08-22 23:19:38.000000000 +0000
+@@ -18,7 +18,7 @@
+ 
+ # These subdirectories require installation due to binaries within them.
+ ifeq ($(VIDIX),yes)
+-SUBDIRS += libdha vidix
++SUBDIRS += vidix
+ DO_MAKE = @ for i in $(SUBDIRS); do $(MAKE) -C $$i $@; done
+ endif
+ 
+@@ -50,7 +50,7 @@
+ 
+ PARTS = libmpdemux libmpcodecs mp3lib liba52 libmpeg2 libavcodec libao2 drivers linux postproc input libvo libaf
+ ifeq ($(VIDIX),yes)
+-PARTS += libdha vidix
++PARTS += vidix
+ endif
+ ifeq ($(FAME),yes)
+ PARTS += libfame
+@@ -88,7 +88,7 @@
+ endif
+ 
+ ifeq ($(VIDIX),yes)
+-COMMON_DEPS += libdha/libdha.so vidix/libvidix.a
++COMMON_DEPS += vidix/libvidix.a
+ endif
+ ifeq ($(FAME),yes)
+ COMMON_DEPS += libfame/libfame.a
+diff -Nur MPlayer-0.91/README.SL-C7x0 MPlayer-0.91-slc7x0/README.SL-C7x0
+--- MPlayer-0.91/README.SL-C7x0	1970-01-01 00:00:00.000000000 +0000
++++ MPlayer-0.91-slc7x0/README.SL-C7x0	2003-08-23 00:26:36.000000000 +0000
+@@ -0,0 +1 @@
++./configure --prefix=/usr/local --target=arm-linux --disable-i18n --enable-vidix --disable-mpdvdkit --disable-tv --disable-mencoder
+diff -Nur MPlayer-0.91/vidix/drivers/Makefile MPlayer-0.91-slc7x0/vidix/drivers/Makefile
+--- MPlayer-0.91/vidix/drivers/Makefile	2002-12-21 13:06:23.000000000 +0000
++++ MPlayer-0.91-slc7x0/vidix/drivers/Makefile	2003-08-23 00:23:52.000000000 +0000
+@@ -4,6 +4,12 @@
+ 
+ BINDIR = $(LIBDIR)/mplayer/vidix
+ 
++W100_VID=w100_vid.so
++W100_SRCS=w100_vid.c
++W100_OBJS=w100_vid.o
++W100_LIBS=-lm -L/opt/QtPalmtop/lib -lqte
++W100_CFLAGS=$(OPTFLAGS) -fPIC -I. -I..
++
+ CYBERBLADE_VID=cyberblade_vid.so
+ CYBERBLADE_SRCS=cyberblade_vid.c
+ CYBERBLADE_OBJS=cyberblade_vid.o
+@@ -46,13 +52,20 @@
+ MGA_CRTC2_LIBS=-L../../libdha -ldha -lm
+ MGA_CRTC2_CFLAGS=$(OPTFLAGS) -fPIC -I. -I.. -DCRTC2
+ 
+-all:    $(CYBERBLADE_VID) $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(PM3_VID)
++all:    $(W100_VID)
++#$(CYBERBLADE_VID) $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(PM3_VID)
+ 
+ 
+ .SUFFIXES: .c .o
+ 
+ # .PHONY: all clean
+ 
++$(W100_OBJS):    $(W100_SRCS)
++	$(CC) -c $(W100_CFLAGS) -o $@ $<
++
++$(W100_VID):     $(W100_OBJS)
++	$(LD) $(W100_LIBS) -shared -soname $(W100_VID) -o $(W100_VID) $(W100_OBJS)
++
+ $(CYBERBLADE_OBJS):    $(CYBERBLADE_SRCS)
+ 	$(CC) -c $(CYBERBLADE_CFLAGS) -o $@ $<
+ 
+diff -Nur MPlayer-0.91/vidix/drivers/w100api_fake.h MPlayer-0.91-slc7x0/vidix/drivers/w100api_fake.h
+--- MPlayer-0.91/vidix/drivers/w100api_fake.h	1970-01-01 00:00:00.000000000 +0000
++++ MPlayer-0.91-slc7x0/vidix/drivers/w100api_fake.h	2003-08-23 03:15:16.000000000 +0000
+@@ -0,0 +1,380 @@
++/* $Id$ */
++
++/*
++ * Copyright (c) 2003 AGAWA Koji <kaoru-k @self-core.org="">
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer
++ *    in this position and unchanged.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote products
++ *    derived from this software withough specific prior written permission
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
++ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
++ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
++ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
++ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++/**
++ * @file w100api_fake.h
++ * @brief 
++ *
++ * 
++ *
++ * @author AGAWA Koji
++ * @date $Date$
++ * @version $Revision$
++ */
++
++#include <sys/types.h>
++
++#ifndef W100API_FAKE_H_INCLUDED
++#define W100API_FAKE_H_INCLUDED
++
++#ifdef __cplusplus
++# define EXTERN_C_BEGIN extern "C" {
++# define EXTERN_C_END }
++#else
++# define EXTERN_C_BEGIN
++# define EXTERN_C_END
++#endif
++
++EXTERN_C_BEGIN
++
++// DP_GUI_MASTER_CNTL.GMC_Dst_DataType
++// DP_DATATYPE.Dp_Dst_DataType
++// w100fb.h の値とは違う。
++/* #define DSTTYPE_8BPP            2       // 8 bpp grey scale */
++/* #define DSTTYPE_16BPP_1555      3       //16 bpp aRGB 1555 */
++/* #define DSTTYPE_16BPP_444       5       //16 bpp aRGB 4444 */
++#define DSTTYPE_8BPP            1
++
++// DP_GUI_MASTER_CNTL.GMC_Src_DataType
++// DP_DATATYPE.Dp_Src_DataType
++// w100fb.h より。多分あってると思う。
++#define SRCTYPE_1BPP_OPA        0       //mono (expanded to frgd, bkgd)
++#define SRCTYPE_1BPP_TRA        1       //mono (expanded to frgd, leave_alone)
++#define SRCTYPE_EQU_DST         3       //color (same as DST)
++#define SRCTYPE_SOLID_COLOR_BLT 4       //solid color for Blt (use frgd)
++#define SRCTYPE_4BPP            5       //4 bpp
++#define SRCTYPE_12BPP_PACKED    6       //12 bpp packed
++
++#define ROP3_SRCCOPY            0xCC
++
++#define OVLTYPE_YUV420          7
++#define OVLTYPE_RGB565          8
++
++typedef struct {
++    /* 順序と型が未確定 */
++    int16_t XCoord;
++    int16_t YCoord;
++} ATI_POINT;
++
++typedef struct {
++    /* 順序と型が未確定 */
++    int16_t XCoord;
++    int16_t YCoord;
++    int16_t Width;
++    int16_t Height;
++} ATI_RECT;
++
++typedef struct {
++    int16_t X_Top_Left;                  // x coordinate of top left corner
++    int16_t Y_Top_Left;                  // y coordinate of top left corner
++    int16_t X_Bottom_Right;              // x coordinate of bottom right corner
++    int16_t Y_Bottom_Right;              // y coordinate of bottom right corner
++} ATI_CLIPRECT;
++
++typedef struct {
++    /* 順序と型が未確定 */
++    uint32_t Count;                        /* +0 たぶん */
++    uint8_t ScaleXFactor;                 /* +4 確定(16=等倍？) */
++    uint8_t ScaleYFactor;                 /* +5 確定 */
++    uint8_t BlendOn;                      /* +6 確定 */
++    uint8_t dummy1;                       /* 未使用？ */
++} ATI_STRETCH;                          /* 8bytes? */
++
++typedef struct {
++    uint32_t *lpSrcBitmap;                /* サーフェスのオフセット */
++    uint16_t XCoord;                      /* +4  確定:サーフェス内のx座標 */
++    uint16_t YCoord;                      /* +6  確定:サーフェス内のy座標 */
++    uint16_t SrcPitch;                    /* +8  確定: */
++    uint16_t SrcHeight;                   /* +10 確定: */
++    uint16_t OverlayWidth;                /* オーバレイの幅(Srcと違う値にしても、動的に拡大縮小されたりはしない、意味あんの？) */
++    uint16_t OverlayHeight;
++    uint32_t lpOverlayKey;                /* +16 確定:謎(カラーキー？) */
++    uint8_t OverlayFormat;               /* +20 確定 */
++    uint8_t dummy1;
++    uint16_t dummy2;
++} ATI_OVERLAYPROP;                      /* 24bytes? */
++
++typedef struct {
++    int HInvert;
++    int VInvert;
++} ATI_EXTVIDEOPROP;
++
++typedef struct {
++    ATI_EXTVIDEOPROP ExtVideoProp;
++} ATI_UNKNOWN1;
++
++typedef struct {
++    uint32_t dummy1;
++    uint32_t dummy2;
++    uint8_t HExpansion;                   /* +8  確定 */
++    uint8_t VExpansion;                   /* +9  確定 */
++    uint8_t dummy3;
++    uint8_t dummy4;
++    uint8_t RConversion;                  /* +12 確定 */
++    uint8_t dummy5;
++    uint8_t dummy6;
++    uint8_t dummy7;
++    ATI_UNKNOWN1 x;
++} ATI_EXTENDEDOVERLAYPROP;              /* 16byte? */
++
++/**
++ * APIの利用を開始する。
++ *
++ * @return              1:success, 0:fail
++ */
++int AtiCore_ProcessAttach(void);
++
++/**
++ * APIの利用を終了する。
++ *
++ * @return              *不明*
++ */
++int AtiCore_ProcessDetach(void);
++
++/**
++ * サーフェスをビデオメモリ上に作成する。
++ * TODO: ExtRam に確保する方法は？
++ *
++ * @arg     handle      (返値)サーフェスのハンドル
++ * @arg     offset      (返値)サーフェスのオフセット
++ * @arg     size        サーフェスのサイズ(bytes)
++ * @arg     direction   (0:低位から高位へ, 1:高位から低位へ)向かって確保
++ * @return              1:success, 0:fail
++ */
++int AtiCore_AllocateSurface(uint16_t *handle, uint32_t *offset,
++                            uint32_t size, uint32_t direction);
++
++/**
++ * サーフェスを破棄する。
++ *
++ * @arg     handle      サーフェスのハンドル
++ * @return              1:success, 0:fail
++ */
++int AtiCore_DestroySurface(uint16_t handle);
++
++/**
++ * BitBlt 系関数の ROP(ラスターオペレーション) を設定する？
++ *
++ * @param   rop         8ビットのフラグと思われる
++ */
++int AtiCore_SetRopOperation(uint32_t rop);
++
++/**
++ * BitBlt 系関数で使われるサーフェスのピクセルフォーマットを設定する？
++ *
++ */
++int AtiCore_SetDstType(uint32_t);
++int AtiCore_SetSrcType(uint32_t);
++
++/**
++ * BitBlt 系関数のクリッピングの設定？
++ *
++ */
++int AtiCore_SetSrcClippingRect(ATI_CLIPRECT *cliprect);
++int AtiCore_SetDstClippingRect(ATI_CLIPRECT *cliprect);
++
++/**
++ * BitBlt 系関数で使われるサーフェスのピッチとオフセットを設定する。
++ */
++int AtiCore_SetSrcPitchOffset(int pitch, int offset);
++int AtiCore_SetDstPitchOffset(int pitch, int offset);
++
++/**
++ * まだ謎
++ */
++int AtiCore_BitBltFilpRotate(int flags,
++                             ATI_RECT *dstRect, ATI_RECT *srcRect);
++
++/**
++ * まだ謎
++ */
++int AtiCore_StretchBlt(ATI_STRETCH *option,
++                       ATI_POINT *point, ATI_RECT *srcRect);
++
++
++/**
++ * (BitBltなどの)処理が完了するのを待つ？
++ *
++ * @param   nsec        ウェイト時間(msec)
++ * @return              1:処理が完了した, 0:処理はまだ終わっていない
++ */
++int AtiCore_WaitComplete(int msec);
++
++/**
++ * オーバレイを確保する。
++ *
++ * AtiCore_SetOverlayOnOff(handle, true) しないと、オーバレイサーフェスは
++ * 表示されない。
++ *
++ * @param   handle      (返値)オーバレイのハンドル
++ * @return              1:success, 0:fail
++ */
++int AtiCore_AllocOverlay(uint16_t *handle);
++
++/**
++ * オーバレイを解放する。
++ *
++ * AtiCore_SetOverlayOnOff(handle, false) しないと、オーバレイサーフェスは
++ * 表示されたままになる。
++ *
++ * @param   handle      オーバレイのハンドル
++ */
++int AtiCore_ReleaseOverlay(uint16_t handle);
++
++/**
++ * オーバレイの設定をする。
++ *
++ * @return              1:success, 0:fail
++ */
++int AtiCore_SetupOverlay(uint16_t handle, ATI_OVERLAYPROP *prop);
++
++/**
++ * オーバレイの拡張設定をする。
++ *
++ */
++int AtiCore_SetupOverlayExtended(uint16_t handle, ATI_EXTENDEDOVERLAYPROP *prop);
++
++/**
++ * オーバレイサーフェスの表示/非表示を設定する。
++ *
++ * @param   handle      オーバレイのハンドル
++ * @param   isShow      1:表示, 0:非表示
++ * @return              1:success, 0:fail
++ */
++int AtiCore_SetOverlayOnOff(uint16_t handle, int isShow);
++
++/**
++ * オーバレイサーフェスの表示位置を設定する。
++ *
++ * @param   handle      オーバレイのハンドル
++ * @param   x           x 座標
++ * @param   y           y 座標
++ */
++int AtiCore_SetOverlayPos(uint16_t handle, uint16_t x, uint16_t y);
++
++/**
++ * VRAM に対する直メモリアクセスを開始する。
++ *
++ * @param   offset      サーフェスのオフセット
++ * @param   regdata     (返値)offset に対応するアドレス
++ */
++int AtiCore_SetupMemoryTransfer(uint32_t offset, uint32_t *regdata);
++
++/**
++ * VRAM に対する直メモリアクセスを終了する。
++ */
++int AtiCore_TerminateMemoryTransfer(void);
++
++/**
++ * フロントバッファのピッチとオフセットを取得する。
++ *
++ * @param   pitch       (返値)サーフェスのピッチ
++ * @param   offset      (返値)サーフェスのオフセット
++ */
++int AtiCore_GetFrontBufferPitchOffset(uint32_t *pitch, uint32_t *offset);
++
++/**
++ * 明るさの変更。(オーバレイのみ？)
++ *
++ * @param   brightness  (暗)-64...63(明)
++ * @return              1:success, 0:fail
++ */
++int AtiCore_SetDisplayBrightness(int brightness);
++
++/**
++ * 実装されているビデオメモリのサイズを取得する。
++ *
++ * @param   internal    (返値)内部VRAMの容量(バイト)
++ * @param   external    (返値)外部VRAMの容量(バイト)
++ * @return              1:success, 0:fail
++ */
++int GetAvailableVideoMem(uint32_t *internal, uint32_t *external);
++
++/* ================================================================ */
++/* from libqte.so.2.3.2 */
++/*
++AtiCore_AlphaBlend
++AtiCore_BitBlt(int, ATIRect*, ATIRect*)?
++AtiCore_BrushType
++AtiCore_CursorOnOff
++AtiCore_DrawPixel
++AtiCore_Flush
++AtiCore_GammaCorrection
++AtiCore_GetCRC
++AtiCore_GetCursorPos
++AtiCore_GetDeviceInfo
++AtiCore_GetGPIO_Data
++AtiCore_GetGraphicExtended
++AtiCore_GetGraphicWindowPos
++AtiCore_GetLargestVideoMemBlock
++AtiCore_GetLastError
++AtiCore_GetMultiCRC
++AtiCore_GetOverlayPos
++AtiCore_GetPitchOffsetProperty
++AtiCore_Host
++AtiCore_LoadCursorBitMap
++AtiCore_PaintRect
++AtiCore_PolyScanline
++AtiCore_Polyline
++AtiCore_ProcessAttachMinimal(void)?
++AtiCore_ProcessAttachSpecialMode
++AtiCore_ProcessDetachMinimal(void)?
++AtiCore_ProcessDetachSpecialMode
++AtiCore_ReadCfgReg
++AtiCore_ReadMem(int, int)?
++AtiCore_ReadReg(int, int)?
++AtiCore_ScanlineShading
++AtiCore_SetApertures
++AtiCore_SetBkgColour
++AtiCore_SetBytePixelOrder
++AtiCore_SetCursorPos
++AtiCore_SetDisplayParameters
++AtiCore_SetDriverBehaviour
++AtiCore_SetFrgColour
++AtiCore_SetFrontBuffer(int, int, int)?
++AtiCore_SetGPIO_Data
++AtiCore_SetGraphicWindowOnOff
++AtiCore_SetGraphicWindowPos
++AtiCore_SetOverlayPosUsingGraphicWindowXY
++AtiCore_SetPartialCursor
++AtiCore_SetupGraphicExtended
++AtiCore_SetupGraphicWindow(int)?
++AtiCore_SetupPM4
++AtiCore_SmallText
++AtiCore_SubmitPM4Packet
++AtiCore_TransBitBlt
++AtiCore_WriteCfgReg
++AtiCore_WriteMem
++AtiCore_WriteReg
++ */
++
++EXTERN_C_END
++
++#endif /* W100API_FAKE_H_INCLUDED */
+diff -Nur MPlayer-0.91/vidix/drivers/w100_vid.c MPlayer-0.91-slc7x0/vidix/drivers/w100_vid.c
+--- MPlayer-0.91/vidix/drivers/w100_vid.c	1970-01-01 00:00:00.000000000 +0000
++++ MPlayer-0.91-slc7x0/vidix/drivers/w100_vid.c	2003-08-30 01:41:27.000000000 +0000
+@@ -0,0 +1,351 @@
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <inttypes.h>
++#include <unistd.h>
++
++#include "../vidix.h"
++#include "../fourcc.h"
++#include "../../config.h"
++#include "w100api_fake.h"
++
++//#define SCREEN_320240	1
++
++#ifdef SCREEN_320240
++
++    #define SCREEN_WIDTH	320
++    #define SCREEN_HEIGHT	240
++
++#else
++
++    #define SCREEN_WIDTH	480
++    #define SCREEN_HEIGHT	640
++
++#endif
++
++static uint16_t g_overlayHandle;
++
++static uint32_t VRAMoffset;
++static uint16_t VH;
++
++static uint32_t VRAMoffset2;
++static uint16_t VH2;
++
++static vidix_playback_t st_playbackInfo;
++
++static vidix_capability_t w100_cap =
++{
++    "ATI Imageon W100 driver",
++    "Alexander Chukov <sash@cacko.biz>",
++    TYPE_OUTPUT,
++    { 0, 0, 0, 0 },                     /* reserved */
++    SCREEN_WIDTH,                       /* max width */
++    SCREEN_HEIGHT,                      /* max height */
++    4,                                  /* min width */
++    4,                                  /* min height */
++    -1,                                 /* max framerate */
++    FLAG_EQUALIZER,                     /* flags */
++    0x1002,                             /* VENDOR_ATI(libdha/pci_vendors.h) */
++    -1,                                 /* device id */
++    { 0, 0, 0, 0 }                      /* reserved */
++};
++
++unsigned int vixGetVersion(void)
++{
++    return VIDIX_VERSION;
++}
++
++int vixProbe(int verbose, int force)
++{
++    return 0;
++}
++
++int vixInit(void)
++{
++    if (AtiCore_ProcessAttach()) {
++        if (AtiCore_AllocOverlay(&g_overlayHandle)) {
++	    VH = VH2 = 0;
++            return 0;
++	}
++    }
++
++    return ENOSYS;
++}
++
++void vixDestroy(void)
++{
++    AtiCore_SetOverlayOnOff(g_overlayHandle, 0);
++    if (VH2) AtiCore_DestroySurface(VH2);
++    if (VH) AtiCore_DestroySurface(VH);
++    AtiCore_ReleaseOverlay(g_overlayHandle);
++    AtiCore_ProcessDetach();
++}
++
++int vixGetCapability(vidix_capability_t *to)
++{
++    memcpy(to, &w100_cap, sizeof(vidix_capability_t));
++    return 0;
++}
++
++static int is_supported_fourcc(uint32_t fourcc)
++{
++    switch(fourcc) {
++    case IMGFMT_YV12:
++        return 1;
++    default:
++        return 0;
++    }
++}
++
++int vixQueryFourcc(vidix_fourcc_t *to)
++{
++    if (is_supported_fourcc(to->fourcc)) {
++        to->depth = VID_DEPTH_1BPP | VID_DEPTH_2BPP |
++            VID_DEPTH_4BPP | VID_DEPTH_8BPP |
++            VID_DEPTH_12BPP| VID_DEPTH_15BPP|
++            VID_DEPTH_16BPP| VID_DEPTH_24BPP|
++            VID_DEPTH_32BPP;
++        to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK;
++/*         to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK | VID_CAP_COLORKEY; */
++        return 0;
++    } else
++        to->depth = to->flags = 0;
++
++    return ENOSYS;
++}
++
++int vixGetGrKeys(vidix_grkey_t *grkey)
++{
++    return 0;
++}
++
++int vixSetGrKeys(const vidix_grkey_t *grkey)
++{
++    return 0;
++}
++
++static vidix_video_eq_t st_equal =
++{
++    VEQ_CAP_BRIGHTNESS,
++    0, 0, 0, 0, 0, 0, 0, 0
++};
++
++int vixPlaybackGetEq(vidix_video_eq_t * eq)
++{
++    memcpy(eq, &st_equal, sizeof(st_equal));
++    return 0;
++}
++
++int vixPlaybackSetEq(const vidix_video_eq_t * eq)
++{
++    int br;
++
++    if (eq->cap & VEQ_CAP_BRIGHTNESS)
++        st_equal.brightness = eq->brightness;
++    if (eq->cap & VEQ_CAP_CONTRAST)
++        st_equal.contrast = eq->contrast;
++    if (eq->cap & VEQ_CAP_SATURATION)
++        st_equal.saturation = eq->saturation;
++    if (eq->cap & VEQ_CAP_HUE)
++        st_equal.hue = eq->hue;
++    if (eq->cap & VEQ_CAP_RGB_INTENSITY) {
++        st_equal.red_intensity   = eq->red_intensity;
++        st_equal.green_intensity = eq->green_intensity;
++        st_equal.blue_intensity  = eq->blue_intensity;
++    }
++    st_equal.flags = eq->flags;
++
++    br = (st_equal.brightness + 1000) * 127 / 2000;
++    if (br < 0)
++        br = 0;
++    if (br > 127)
++        br = 127;
++    if (br > 64)
++        br -= 64;
++    else
++        br += 64;
++
++    AtiCore_SetDisplayBrightness(br);
++
++    return 0;
++}
++
++int vixConfigPlayback(vidix_playback_t *info)
++{
++    int src_w, src_h;
++    int drw_w, drw_h;
++    int y_pitch, uv_pitch;
++    int i, ret;
++    ATI_OVERLAYPROP overlayProp;
++    ATI_CLIPRECT clipRect;
++    uint32_t regdata, base;
++    uint32_t intAddr, extAddr, isExt = 0;
++
++    if (!is_supported_fourcc(info->fourcc))
++        return -1;
++
++    src_w = info->src.w;
++    src_h = info->src.h;
++    drw_w = info->dest.w;
++    drw_h = info->dest.h;
++
++    switch (info->fourcc) {
++	case IMGFMT_YV12:
++	    y_pitch = (src_w + 15) & ~15;
++	    uv_pitch = ((src_w / 2) + 7) & ~7;
++	    info->offset.y = 0;
++	    info->offset.v = y_pitch * src_h;
++	    info->offset.u = info->offset.v + uv_pitch * (src_h / 2);
++	    info->frame_size = y_pitch * src_h + 2 * uv_pitch * (src_h / 2);
++	    break;
++	default:
++	    return -1;
++    }
++    
++    fprintf(stderr, "w100_vid: struct info {\n");
++    fprintf(stderr, "w100_vid:   src.x:%d. src.y:%d. src.w:%d, src.h:%d,\n",
++            info->src.x, info->src.y, info->src.w, info->src.h);
++    fprintf(stderr, "w100_vid:   dest.x:%d. dest.y:%d. dest.w:%d, dest.h:%d,\n",
++            info->dest.x, info->dest.y, info->dest.w, info->dest.h);
++    fprintf(stderr, "w100_vid:   offset.y:%d, offset.v:%d offset.y:%d\n",
++            info->offset.y, info->offset.v, info->offset.u);
++    fprintf(stderr, "w100_vid:   frame_size:%d,\n", info->frame_size);
++
++    if (AtiCore_AllocateSurface( &VH, &VRAMoffset, info->frame_size, 0 ))
++	fprintf(stderr, "w100_vid:   main overlay surface offset = 0x%08x.\n", VRAMoffset);
++    else {
++	fprintf(stderr, "w100_vid:   cannot allocate main overlay surface.\n");
++	return -1;
++    }
++
++    AtiCore_SetupMemoryTransfer(VRAMoffset, &intAddr);
++    AtiCore_TerminateMemoryTransfer();
++
++    if (info->num_frames == 1) {
++        info->dga_addr = (void *)(intAddr);
++    } else {
++	if (AtiCore_AllocateSurface( &VH2, &VRAMoffset2, info->frame_size, 0 ))
++	    fprintf(stderr, "w100_vid: shadow overlay surface offset = 0x%08x.\n", VRAMoffset2);
++	else {
++	    fprintf(stderr, "w100_vid: cannot allocate shadow overlay surface.\n");
++	    return -1;
++	}
++
++	AtiCore_SetupMemoryTransfer(VRAMoffset, &extAddr);
++	AtiCore_TerminateMemoryTransfer();
++
++        if (info->num_frames > 1) /* no more ATI onchip memory :( */
++            info->num_frames = 1;
++        info->dga_addr = (void *)(extAddr);
++    }
++
++    fprintf(stderr, "w100_vid:   num_frames:%d,\n", info->num_frames);
++
++    info->dest.pitch.y = 16;
++    info->dest.pitch.u = 16;
++    info->dest.pitch.v = 16;
++
++    fprintf(stderr, "w100_vid: }\n");
++
++    info->offsets[0] = 0;
++    fprintf(stderr, "w100_vid: 0x%08x\n", (uint32_t)info->dga_addr);
++
++    overlayProp.lpSrcBitmap = (uint32_t *)VRAMoffset;
++    overlayProp.XCoord = 0;
++    overlayProp.YCoord = 0;
++    overlayProp.SrcPitch = 0 ? (SCREEN_WIDTH) : y_pitch;
++    overlayProp.SrcHeight = 0 ? (SCREEN_HEIGHT) : src_h;
++    overlayProp.OverlayWidth = 0 ? (SCREEN_WIDTH) : y_pitch;
++    overlayProp.OverlayHeight = 0 ? (SCREEN_HEIGHT) : src_h;
++    overlayProp.lpOverlayKey = 0;
++    overlayProp.OverlayFormat = OVLTYPE_YUV420;
++
++    ret = AtiCore_SetupOverlay(g_overlayHandle, &overlayProp);
++    printf("w100_vid: AtiCore_SetupOverlay: ret=%d\n", ret);
++    
++    clipRect.X_Top_Left = 0;
++    clipRect.Y_Top_Left = 0;
++    clipRect.X_Bottom_Right = (SCREEN_WIDTH);
++    clipRect.Y_Bottom_Right = (SCREEN_HEIGHT);
++    ret = AtiCore_SetDstClippingRect(&clipRect);
++    clipRect.X_Bottom_Right = info->src.w;
++    clipRect.Y_Bottom_Right = info->src.h;
++    ret = AtiCore_SetSrcClippingRect(&clipRect);
++
++    AtiCore_SetOverlayPos(g_overlayHandle, info->dest.x, info->dest.y);
++
++    AtiCore_SetRopOperation(ROP3_SRCCOPY);
++    AtiCore_SetDstType(DSTTYPE_8BPP);
++    AtiCore_SetSrcType(SRCTYPE_EQU_DST);
++
++    vixPlaybackSetEq(&st_equal);
++
++    memcpy(&st_playbackInfo, info, sizeof(*info));
++
++    fprintf(stderr, "w100_vid: ---- vixConfigPlayback complete.\n");
++
++    return 0;
++}
++
++int vixPlaybackOn(void)
++{
++    AtiCore_SetOverlayOnOff(g_overlayHandle, 1);
++
++    return 0;
++}
++
++int vixPlaybackOff(void)
++{
++    AtiCore_SetOverlayOnOff(g_overlayHandle, 0);
++
++    return 0;
++}
++
++int vixPlaybackFrameSelect(unsigned int frame)
++{
++    ATI_STRETCH stretchOptions;
++    ATI_POINT dpPoint;
++    ATI_RECT srcRect;
++    int ret;
++    int pitch_y, pitch_uv;
++
++    if (frame != 1) return 0;
++
++    stretchOptions.Count = 1;
++    stretchOptions.ScaleXFactor = 16;
++    stretchOptions.ScaleYFactor = 16;
++    stretchOptions.BlendOn = 0;
++    stretchOptions.dummy1 = 0;
++
++    dpPoint.XCoord = 0;
++    dpPoint.YCoord = 0;
++
++    srcRect.XCoord = st_playbackInfo.src.x;
++    srcRect.YCoord = st_playbackInfo.src.y;
++    srcRect.Width = st_playbackInfo.src.w;
++    srcRect.Height = st_playbackInfo.src.h;
++
++    while (AtiCore_WaitComplete(100) != 1)
++        ;
++
++    pitch_y = (st_playbackInfo.src.w + 15) & ~15;
++
++    ret = AtiCore_SetSrcPitchOffset(pitch_y, VRAMoffset2);
++    ret = AtiCore_SetDstPitchOffset(pitch_y, VRAMoffset );
++    ret = AtiCore_StretchBlt(&stretchOptions, &dpPoint, &srcRect);
++
++    srcRect.Width >>=1;
++    srcRect.Height >>= 1;
++    pitch_uv = ((st_playbackInfo.src.w / 2) + 7) & ~7;
++
++    ret = AtiCore_SetSrcPitchOffset(pitch_uv, VRAMoffset2 + st_playbackInfo.offset.u);
++    ret = AtiCore_SetDstPitchOffset(pitch_uv, VRAMoffset  + st_playbackInfo.offset.u);
++    ret = AtiCore_StretchBlt(&stretchOptions, &dpPoint, &srcRect);
++
++    ret = AtiCore_SetSrcPitchOffset(pitch_uv, VRAMoffset2 + st_playbackInfo.offset.v);
++    ret = AtiCore_SetDstPitchOffset(pitch_uv, VRAMoffset  + st_playbackInfo.offset.v);
++    ret = AtiCore_StretchBlt(&stretchOptions, &dpPoint, &srcRect);
++
++    return 0;
++}

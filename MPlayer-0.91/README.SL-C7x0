@@ -1,0 +1,1 @@
+./configure --prefix=/usr/local --target=arm-linux --disable-i18n --enable-vidix --disable-mpdvdkit --disable-tv --disable-mencoder
